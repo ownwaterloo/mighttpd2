@@ -8,7 +8,6 @@ import Control.Monad
 import qualified Data.ByteString.Char8 as BS
 import Data.Conduit.Network
 import Network
-import qualified Network.HTTP.Conduit as H
 import Network.HTTP.Date
 import Network.Wai.Application.Classic hiding ((</>), (+++))
 import Network.Wai.Handler.Warp
@@ -34,16 +33,12 @@ single opt route s rpt stt lgr = reportDo rpt $ do
     setGroupUser opt -- don't change the user of the master process
     ignoreSigChild
     getInfo <- fileCacheInit
-    mgr <- H.newManager H.def {
-            -- FIXME
-            H.managerConnCount = 1024
-          }
     setHandler sigStop   stopHandler
     setHandler sigRetire retireHandler
-    setHandler sigReload (reloadHandler lgr getInfo mgr)
+    setHandler sigReload (reloadHandler lgr getInfo)
     setHandler sigInfo   infoHandler
     report rpt "Worker Mighty started"
-    reload opt route s rpt stt lgr getInfo mgr
+    reload opt route s rpt stt lgr getInfo
   where
     stopHandler = Catch $ do
         report rpt "Worker Mighty finished"
@@ -57,12 +52,12 @@ single opt route s rpt stt lgr = reportDo rpt $ do
             killThread tid
             sClose s
             goRetiring stt
-    reloadHandler lggr getInfo mgr = Catch $
+    reloadHandler lggr getInfo = Catch $
         getWarpThreadId stt >>>= \tid ->
         ifRouteFileIsValid rpt opt $ \newroute -> do
             report rpt "Worker Mighty reloaded"
             killThread tid
-            void . forkIO $ reload opt newroute s rpt stt lggr getInfo mgr
+            void . forkIO $ reload opt newroute s rpt stt lggr getInfo
     infoHandler = Catch $ do
         i <- bshow <$> getConnectionCounter stt
         status <- bshow <$> getServerStatus stt
@@ -70,9 +65,9 @@ single opt route s rpt stt lgr = reportDo rpt $ do
 
 reload :: Option -> RouteDB -> Socket
        -> Reporter -> Stater -> Logger
-       -> (Path -> IO FileInfo) -> H.Manager
+       -> (Path -> IO FileInfo)
        -> IO ()
-reload opt route s rpt stt lgr getInfo mgr = reportDo rpt $ do
+reload opt route s rpt stt lgr getInfo = reportDo rpt $ do
     myThreadId >>= setWarpThreadId stt
     zdater <- initZoneDater
     runSettingsSocket setting s $ \req ->
