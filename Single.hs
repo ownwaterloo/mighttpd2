@@ -76,7 +76,7 @@ reload opt route s rpt stt lgr getInfo mgr = reportDo rpt $ do
     myThreadId >>= setWarpThreadId stt
     zdater <- initZoneDater
     runSettingsSocket setting s $ \req ->
-        fileCgiApp (cspec zdater) filespec cgispec revproxyspec route req
+        fileCgiApp (cspec zdater) filespec cgispec route req
   where
     debug = opt_debug_mode opt
     setting = defaultSettings {
@@ -103,9 +103,6 @@ reload opt route s rpt stt lgr getInfo mgr = reportDo rpt $ do
       }
     cgispec = CgiAppSpec {
         indexCgi = "index.cgi"
-      }
-    revproxyspec = RevProxyAppSpec {
-        revProxyManager = mgr
       }
     initZoneDater = fst <$> clockDateCacher DateCacheConf {
         getTime = epochTime

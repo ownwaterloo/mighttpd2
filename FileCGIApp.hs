@@ -12,8 +12,9 @@ import Types
 
 data Perhaps a = Found a | Redirect | Fail
 
-fileCgiApp :: ClassicAppSpec -> FileAppSpec -> CgiAppSpec -> RevProxyAppSpec -> RouteDB -> Application
-fileCgiApp cspec filespec cgispec revproxyspec um req = case mmp of
+-- fileCgiApp :: ClassicAppSpec -> FileAppSpec -> CgiAppSpec -> RevProxyAppSpec -> RouteDB -> Application
+fileCgiApp :: ClassicAppSpec -> FileAppSpec -> CgiAppSpec -> RouteDB -> Application
+fileCgiApp cspec filespec cgispec um req = case mmp of
     Fail -> do
         let st = preconditionFailed412
         liftIO $ logger cspec req st Nothing
@@ -29,8 +30,6 @@ fileCgiApp cspec filespec cgispec revproxyspec um req = case mmp of
         redirectApp cspec (RedirectRoute src dst) req
     Found (RouteCGI   src dst) ->
         cgiApp cspec cgispec (CgiRoute src dst) req
-    Found (RouteRevProxy src dst dom prt) ->
-        revProxyApp cspec revproxyspec (RevProxyRoute src dst dom prt) req
   where
     mmp = case getBlock (serverName req) um of
         Nothing  -> Fail
