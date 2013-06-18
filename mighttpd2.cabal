@@ -27,7 +27,6 @@ Executable mighty
                       , deepseq
                       , directory
                       , filepath
-                      , http-conduit >= 1.8.2.1
                       , http-date
                       , http-types
                       , io-choice
